@@ -19,6 +19,8 @@ Despite Claude Code being in active use, **no public documentation** exists for 
 
 ## What's Inside
 
+### 📖 Core Documentation
+
 The [**CLAUDE_CODE_LOG_FORMAT.md**](CLAUDE_CODE_LOG_FORMAT.md) specification includes:
 
 ### Complete Documentation
@@ -39,6 +41,11 @@ The [**CLAUDE_CODE_LOG_FORMAT.md**](CLAUDE_CODE_LOG_FORMAT.md) specification inc
 - **Fully annotated examples** - Real events with line-by-line explanations
 - **Dashboard-oriented guide** - Practical code for building visualizations
 - **Edge cases documented** - Out-of-order tool results, streaming artifacts, error patterns
+
+### 📚 Supplemental Documentation
+
+- [**TOOL_RESULT_STRUCTURES.md**](TOOL_RESULT_STRUCTURES.md) - Deep dive on all 16 non-MCP tools with examples, error rates, and parser patterns
+- [**REFLECTIONS.md**](REFLECTIONS.md) - Claude's meta-observations on analyzing 236K+ events of its own cognitive operations *(Unique perspective on AI cognition!)*
 
 ## Validation Methodology
 

@@ -2,9 +2,9 @@
 
 > **The first and only complete, production-tested specification for Claude Code agent conversation logs**
 
-[![Spec Version](https://img.shields.io/badge/spec%20version-1.0-blue.svg)](CLAUDE_CODE_LOG_FORMAT.md)
+[![Spec Version](https://img.shields.io/badge/spec%20version-1.1-blue.svg)](CLAUDE_CODE_LOG_FORMAT.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-v2.0.49-purple.svg)](https://claude.com/claude-code)
-[![Validation](https://img.shields.io/badge/validated-13%2C261%20events-green.svg)](CLAUDE_CODE_LOG_FORMAT.md#validation-status)
+[![Validation](https://img.shields.io/badge/validated-236K%2B%20events-green.svg)](CLAUDE_CODE_LOG_FORMAT.md#validation-status)
 [![Status](https://img.shields.io/badge/status-production%20ready-success.svg)](CLAUDE_CODE_LOG_FORMAT.md)
 
 ## What Is This?
@@ -177,6 +177,14 @@ This specification is based on analysis of Claude Code v2.0.49 logs. As the form
 This specification tracks the **current Claude Code log format**. As Anthropic continues improving Claude Code, the format may change.
 
 ### Specification Releases
+
+- **v1.1** (2025-11-23) - **Claude Code v2.0.49** ⭐ Current
+  - Expanded validation: 236K+ events across 1,001 log files (18x increase)
+  - Complete tool result structures for all 16 non-MCP tools
+  - Corrected multi-tool pattern: 99.97% single tool (2 cases found)
+  - Added [TOOL_RESULT_STRUCTURES.md](TOOL_RESULT_STRUCTURES.md) supplemental documentation
+  - Error rate analysis per tool (Edit: 4.9%, Task: 10%, KillShell: 86%)
+  - Critical finding: Task tool returns array content (unique behavior)
 
 - **v1.0** (2025-11-23) - **Claude Code v2.0.49**
   - Initial release validated against 13,261 events

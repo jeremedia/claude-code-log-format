@@ -2,13 +2,16 @@
 
 > **The first and only complete, production-tested specification for Claude Code agent conversation logs**
 
-[![Version](https://img.shields.io/badge/version-1.0-blue.svg)](CLAUDE_CODE_LOG_FORMAT.md)
+[![Spec Version](https://img.shields.io/badge/spec%20version-1.0-blue.svg)](CLAUDE_CODE_LOG_FORMAT.md)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-v2.0.49-purple.svg)](https://claude.com/claude-code)
 [![Validation](https://img.shields.io/badge/validated-13%2C261%20events-green.svg)](CLAUDE_CODE_LOG_FORMAT.md#validation-status)
 [![Status](https://img.shields.io/badge/status-production%20ready-success.svg)](CLAUDE_CODE_LOG_FORMAT.md)
 
 ## What Is This?
 
-This repository contains the **complete, authoritative specification** for the JSONL log format produced by [Claude Code](https://claude.com/claude-code), Anthropic's official CLI agent for software development.
+This repository contains the **complete, authoritative specification** for the JSONL log format produced by **[Claude Code v2.0.49](https://claude.com/claude-code)**, Anthropic's official CLI agent for software development.
+
+> ⚠️ **Version Notice**: This specification documents the log format used by **Claude Code v2.0.49** (November 2025). The format may evolve as Claude Code improves—Anthropic likely doesn't publish official documentation because they're actively iterating to make Claude better! If you're using a different version, some details may vary.
 
 Despite Claude Code being in active use, **no public documentation** exists for its log format—not in Anthropic's official docs, not on GitHub, not on Stack Overflow, nowhere. Developers building dashboards, analytics tools, parsers, and observability systems have been independently reverse-engineering the same format with no reference.
 
@@ -171,12 +174,25 @@ This specification is based on analysis of Claude Code v2.0.49 logs. As the form
 
 ## Versioning
 
-- **v1.0** (2025-11-23) - Initial release validated against 13,261 events from Claude Code v2.0.49
-  - Complete field inventory
-  - All event and content types
+This specification tracks the **current Claude Code log format**. As Anthropic continues improving Claude Code, the format may change.
+
+### Specification Releases
+
+- **v1.0** (2025-11-23) - **Claude Code v2.0.49**
+  - Initial release validated against 13,261 events
+  - Complete field inventory (7 event types, 23 tools)
+  - All content types documented (text, thinking, tool_use, tool_result, image)
   - Production-tested against diverse workloads
 
-Future versions will track format changes as Claude Code evolves.
+### Future Updates
+
+As Claude Code evolves, this specification will be updated to track format changes:
+- New event types or content types
+- Additional tools (new MCP servers, expanded capabilities)
+- Changes to field semantics or structure
+- Breaking changes will increment major version
+
+**Using a different Claude Code version?** Check the badge above and compare against your version. Open an issue if you find discrepancies!
 
 ## How This Was Created
 

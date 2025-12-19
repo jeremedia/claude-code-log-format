@@ -2,16 +2,23 @@
 
 > **The first and only complete, production-tested specification for Claude Code agent conversation logs**
 
-[![Spec Version](https://img.shields.io/badge/spec%20version-1.1-blue.svg)](CLAUDE_CODE_LOG_FORMAT.md)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-v2.0.49-purple.svg)](https://claude.com/claude-code)
+[![Spec Version](https://img.shields.io/badge/spec%20version-1.2-blue.svg)](CLAUDE_CODE_LOG_FORMAT.md)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-v2.0.65-purple.svg)](https://claude.com/claude-code)
 [![Validation](https://img.shields.io/badge/validated-236K%2B%20events-green.svg)](CLAUDE_CODE_LOG_FORMAT.md#validation-status)
 [![Status](https://img.shields.io/badge/status-production%20ready-success.svg)](CLAUDE_CODE_LOG_FORMAT.md)
 
 ## What Is This?
 
-This repository contains the **complete, authoritative specification** for the JSONL log format produced by **[Claude Code v2.0.49](https://claude.com/claude-code)**, Anthropic's official CLI agent for software development.
+This repository contains the **complete, authoritative specification** for the JSONL log format produced by **[Claude Code](https://claude.com/claude-code)**, Anthropic's official CLI agent for software development.
 
-> ⚠️ **Version Notice**: This specification documents the log format used by **Claude Code v2.0.49** (November 2025). The format may evolve as Claude Code improves—Anthropic likely doesn't publish official documentation because they're actively iterating to make Claude better! If you're using a different version, some details may vary.
+> ⚠️ **Version Notice**: The spec and schema are updated to **v1.2 for Claude Code v2.0.65** (Bun-compiled). New fields/subtypes (`slug`, `logicalParentUuid`, `isTeammate`, `thinkingMetadata`, `isMeta`, `compact_boundary`, `stop_hook_summary`, `isCompactSummary`, simplified `file-history-snapshot`) are included. See `VERSION_DRIFT.md` for the 2.0.49 → 2.0.65 diff and `source-docs/` for the reverse-engineered source notes (including summary generation and compaction markers).
+
+### Drift Highlights (v2.0.49 → v2.0.65, now captured in spec v1.2)
+- New top-level metadata: `slug`, `agentId`, `isTeammate`, `logicalParentUuid`, `thinkingMetadata`.
+- Simplified `file-history-snapshot` structure (`messageId` + `snapshot` only) and new system subtypes (`compact_boundary`, `stop_hook_summary`).
+- Automatic maintenance tasks emit `summary` events (startup auto-summarizer) and compaction markers (`compact_boundary` + `isCompactSummary`).
+- Session filenames favor full UUIDs; plan slugs are reused across agents.
+- Full drift list and reproduction steps live in `VERSION_DRIFT.md` and `source-docs/README.md`.
 
 Despite Claude Code being in active use, **no public documentation** exists for its log format—not in Anthropic's official docs, not on GitHub, not on Stack Overflow, nowhere. Developers building dashboards, analytics tools, parsers, and observability systems have been independently reverse-engineering the same format with no reference.
 
@@ -46,6 +53,12 @@ The [**CLAUDE_CODE_LOG_FORMAT.md**](CLAUDE_CODE_LOG_FORMAT.md) specification inc
 
 - [**TOOL_RESULT_STRUCTURES.md**](TOOL_RESULT_STRUCTURES.md) - Deep dive on all 16 non-MCP tools with examples, error rates, and parser patterns
 - [**REFLECTIONS.md**](REFLECTIONS.md) - Claude's meta-observations on analyzing 236K+ events of its own cognitive operations *(Unique perspective on AI cognition!)*
+
+### 🔄 Versioning & Maintenance
+
+- [**VERSION_DRIFT.md**](VERSION_DRIFT.md) - Analysis of format changes between spec version and current Claude Code
+- [**VERSIONING_PROCESS.md**](VERSIONING_PROCESS.md) - Process for evaluating and updating the spec against new versions
+- [**scripts/validate-format.sh**](scripts/validate-format.sh) - Automated schema extraction and drift detection
 
 ## Validation Methodology
 
@@ -185,7 +198,13 @@ This specification tracks the **current Claude Code log format**. As Anthropic c
 
 ### Specification Releases
 
-- **v1.1** (2025-11-23) - **Claude Code v2.0.49** ⭐ Current
+- **v1.2** (2025-12-13) - **Claude Code v2.0.65** ⭐ Current
+  - Added new top-level metadata (`slug`, `logicalParentUuid`, `isTeammate`, `isMeta`, `thinkingMetadata`, `isVisibleInTranscriptOnly`)
+  - Documented new `system` subtypes (`compact_boundary`, `stop_hook_summary`) and `compactMetadata`
+  - Simplified `file-history-snapshot` structure, `summary.isCompactSummary`, auto-summarizer + compaction emitters
+  - Updated JSON Schema to cover additive fields; drift reconciled from v2.0.49 corpus to v2.0.65 binary
+
+- **v1.1** (2025-11-23) - **Claude Code v2.0.49**
   - Expanded validation: 236K+ events across 1,001 log files (18x increase)
   - Complete tool result structures for all 16 non-MCP tools
   - Corrected multi-tool pattern: 99.97% single tool (2 cases found)
@@ -199,6 +218,16 @@ This specification tracks the **current Claude Code log format**. As Anthropic c
   - All content types documented (text, thinking, tool_use, tool_result, image)
   - Production-tested against diverse workloads
 
+### Version Drift Analysis
+
+When significant version gaps occur, run the validation script:
+
+```bash
+./scripts/validate-format.sh
+```
+
+Current drift analysis: [VERSION_DRIFT.md](VERSION_DRIFT.md) documents 23 new fields between v2.0.49 and v2.0.65.
+
 ### Future Updates
 
 As Claude Code evolves, this specification will be updated to track format changes:
@@ -207,7 +236,9 @@ As Claude Code evolves, this specification will be updated to track format chang
 - Changes to field semantics or structure
 - Breaking changes will increment major version
 
-**Using a different Claude Code version?** Check the badge above and compare against your version. Open an issue if you find discrepancies!
+See [VERSIONING_PROCESS.md](VERSIONING_PROCESS.md) for the complete update workflow.
+
+**Using a different Claude Code version?** Check the badge above and compare against your version. Run the validation script or open an issue if you find discrepancies!
 
 ## How This Was Created
 

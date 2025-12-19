@@ -1,41 +1,41 @@
 # Claude Code Slug Generation
 
-**Status**: Validated against source (`cli-beautified.js` v2.0.55)  
-**Last Updated**: 2025-02-14
+**Status**: Validated against Claude Code v2.0.65 (Bun-compiled binary)  
+**Last Updated**: 2025-12-12
 
 > Auto-generated slugs like `elegant-whistling-dahl` and where they’re used.
 
 ## Source Pointers
-- Wordlists + slug builder (`NQ2`, `LQ2`, `wB5`, `xo1`): `cli-beautified.js:262838-262910`.
-- Plan slug cache and file selection (`NB5`, `U_`, `TU`): `cli-beautified.js:262880-262940`.
+- Wordlists + slug builder (`KpR`, `NpR`, `hJD`)
+- Plan slug cache and file selection (`ZJD`, `LJD`, `VX`, `Mh`, `CRR`)
 
 ## Wordlists & Construction
-- Defined in `LQ2` (arrays `$Q2`, `wQ2`, `qQ2`):
-  - `$Q2`: adjectives (e.g., `elegant`, `sparkling`, `resilient`, `vectorized`).
-  - `wQ2`: nouns drawn from nature, animals, objects, and computing pioneers (includes names like `dahl`, `hopper`, `lovelace`).
-  - `qQ2`: gerunds/verbs (`whistling`, `crafting`, `tinkering`, etc.).
+- Wordlists live in three arrays (`X4B`, `h4B`, `Q4B`):
+  - `X4B`: adjectives (e.g., `vectorized`, `resilient`, `cached`, `sparkling`, many new whimsical adjectives).
+  - `h4B`: gerunds/verbs (`whistling`, `foraging`, `wobbling`, etc.).
+  - `Q4B`: nouns drawn from nature, animals, objects, and computing pioneers (names like `dahl`, `hopper`, `lovelace`, plus new whimsical nouns).
 - Random selection:
-  - `wB5(len)` → `crypto.randomBytes(4).readUInt32BE(0) % len`
-  - `xo1(list)` picks a random element.
-  - `NQ2()` returns `<adjective>-<verb>-<noun>`.
-- Total combinations tracked as `SzG = $Q2.length * qQ2.length * wQ2.length`.
+  - `hJD(len)` → `crypto.randomBytes(4).readUInt32BE(0) % len`
+  - `NpR(list)` picks a random element.
+  - `KpR()` returns `<adjective>-<verb>-<noun>`.
+- Total combinations tracked as `cL8 = X4B.length * h4B.length * Q4B.length`.
 
 ## Usage in Plans
-- `NB5(sessionId?)`:
-  - Returns a cached slug per session (cache: `planSlugCache`, via `nFA()`).
-  - On cache miss, attempts up to `qB5 = 10` random slugs, checking for existing files.
-  - Slugs are considered taken if a matching markdown file exists under the plans directory.
+- `ZJD(sessionId?)`:
+  - Returns a cached slug per session (cache held in `E6T()`).
+  - On cache miss, attempts up to `EJD = 10` random slugs, checking for existing files under `~/.claude/plans/`.
+  - Slugs are considered taken if a matching markdown file already exists.
 - Plan file locations:
-  - Base dir: `~/.claude/plans/` (`TU()`), created on demand.
-  - Primary plan path: `~/.claude/plans/<slug>.md` (`U_()`).
-  - Agent-specific variant: `~/.claude/plans/<slug>-agent-<agentSessionId>.md` when writing a plan for a non-root agent.
+  - Base dir: `~/.claude/plans/` (`Mh()`), created on demand.
+  - Primary plan path: `~/.claude/plans/<slug>.md` (`VX()` when caller session matches root).
+  - Agent-specific variant: `~/.claude/plans/<slug>-agent-<agentSessionId>.md` when writing a plan for a non-root agent (reuses the root session’s slug).
 - Helpers:
-  - `LB5(sessionId, slug)` manually seeds the cache.
-  - `J01(messages)` detects an existing `slug` field on a message chain, seeds the cache, and checks for the presence of `<slug>.md`.
+  - `LJD(sessionId, slug)` manually seeds the cache.
+  - `CRR(messages)` detects an existing `slug` on a message chain, seeds the cache, and checks for the presence of `<slug>.md`.
 
 ## Validated vs. Speculative
-- **Validated**: Wordlists, random selection, uniqueness check via filesystem, plan path construction.
-- **Speculative**: How/when slugs get attached to assistant messages (only the detection hook `J01` was traced here).
+- **Validated**: Wordlists, random selection, uniqueness check via filesystem, plan path construction, reuse of root slugs for agent plans.
+- **Speculative**: How/when slugs get attached to assistant messages (only the detection hook `CRR` was traced here).
 
 ## Cross-References
 - Session/log file placement for plan slugs: `SESSION_MANAGEMENT.md`

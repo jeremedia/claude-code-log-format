@@ -1,9 +1,9 @@
 # Claude Code Agent Log Format - Master Reference
 
-**Spec Version**: 1.1
-**Claude Code Version**: 2.0.49
+**Spec Version**: 1.2
+**Claude Code Version**: 2.0.65 (Bun-compiled)
 **Format**: JSONL (newline-delimited JSON)
-**Last Updated**: 2025-11-23
+**Last Updated**: 2025-12-13
 
 > 📋 **Document Scope**: This document describes the **log file format** as produced by Claude Code, not the behavior of any specific parser implementation. Fields documented here appear in the logs regardless of whether current parsers utilize them. Parser implementations may use a subset of available fields.
 
@@ -38,7 +38,7 @@ Claude Code agent logs capture the complete conversation between the user and th
 
 ### Validation Status
 
-**Sample Data**: 1,001 log files, ~236,000+ events, 14 diverse projects (Oct-Nov 2025)
+**Sample Data (v2.0.49 corpus)**: 1,001 log files, ~236,000+ events, 14 diverse projects (Oct-Nov 2025)
 - ✅ **Core schema**: Verified across 236K+ events from production use
 - ✅ **Enum values**: Comprehensive coverage validated
 - ✅ **Error cases**: 100+ failed tool executions documented with patterns
@@ -48,7 +48,9 @@ Claude Code agent logs capture the complete conversation between the user and th
 - ✅ **Content types**: 5 types including thinking (3,225 occurrences) and image (24)
 - ✅ **Event types**: 7 types including file-history-snapshot (615) and system events (74)
 
-**Production Readiness**: VALIDATED - Battle-tested against 236K+ events from real-world Claude Code usage across diverse workloads.
+**Drift Coverage (v2.0.65)**: New fields/subtypes (`slug`, `logicalParentUuid`, `isTeammate`, `thinkingMetadata`, `isMeta`, `compact_boundary`, `stop_hook_summary`, simplified `file-history-snapshot`, `isCompactSummary`) validated against the Bun binary (strings) and spot-checks of v2.0.65 logs.
+
+**Production Readiness**: VALIDATED for v2.0.49 corpus; additive drift fields incorporated and spot-validated for v2.0.65.
 
 ---
 
@@ -63,12 +65,19 @@ Claude Code agent logs capture the complete conversation between the user and th
 | `type` | enum: `"assistant"` \| `"user"` \| `"file-history-snapshot"` \| `"queue-operation"` \| `"system"` \| `"summary"` \| `"turn_end"` | Yes | Event type |
 | `timestamp` | string (ISO 8601) | Yes | UTC timestamp with millisecond precision (e.g., `"2025-11-23T04:53:42.362Z"`). **Note**: Not unique - multiple events may share the same millisecond timestamp. Use `uuid` for unique identification. |
 | `agentId` | string | Yes | Short agent identifier (e.g., `"6e067db7"`) |
+| `slug` | string | Optional | Plan slug identifier reused across agents (e.g., `"parsed-brewing-stearns"`) |
 | `sessionId` | string (UUID) | Yes | Session identifier (shared across conversation) |
 | `version` | string | Yes | Claude Code version (e.g., `"2.0.49"`) |
 | `cwd` | string | Yes | Working directory path |
 | `gitBranch` | string | Yes | Current git branch name |
 | `isSidechain` | boolean | Yes | Whether this is a sidechain agent (subagent) |
+| `isTeammate` | boolean | Optional | Marks teammate/sidechain teammate mode when enabled |
+| `logicalParentUuid` | string (UUID) \| null | Optional | Logical parent preserved across compaction boundaries |
 | `userType` | string | Yes | Type of user interaction (only `"external"` observed in 13K events; other values may exist) |
+| `isVisibleInTranscriptOnly` | boolean | Optional | When true, event is excluded from normal transcript views |
+| `thinkingMetadata` | object | Optional | `{level, disabled}` hints for thinking budget (assistant/user messages) |
+| `isMeta` | boolean | Optional | Marks system-injected/meta user events (non-human input) |
+| `todos` | array | Optional | Todo state tracking (structure varies; seen on workflow-related entries) |
 | `message` | object | Conditional | Message payload (required for `assistant`/`user` types; see Message Structure) |
 | `requestId` | string | Conditional | API request ID (only on assistant messages) |
 | `toolUseResult` | object | Conditional | Tool execution result metadata (only on user messages with tool results) |
@@ -86,6 +95,7 @@ All messages contain a `message` object with the following structure:
 | `type` | literal: `"message"` | Yes | Always `"message"` for Anthropic API format |
 | `role` | literal: `"assistant"` | Yes | Always `"assistant"` |
 | `content` | array | Yes | Array of content blocks (see Content Types) |
+| `thinkingMetadata` | object | Optional | `{level, disabled}` hints for thinking budget (`high`/ultrathink bumps budget to ~32k) |
 | `stop_reason` | enum: `"tool_use"` \| `"end_turn"` \| `"stop_sequence"` \| null | Yes | Why the message stopped (observed values in 13K events; Anthropic API may support additional values) |
 | `stop_sequence` | string \| null | Yes | Stop sequence used (typically null) |
 | `usage` | object | Yes | Token usage statistics (see Usage Structure) |
@@ -631,6 +641,7 @@ User (uuid: U3, parentUuid: A1): [tool_result: Glob]
 **Special Fields**:
 - `toolUseResult`: Rich metadata about the tool execution (varies by tool)
 - `content[].is_error`: Indicates tool execution result (true=failure, false=success, absent=success)
+- `isMeta`: When true, the user event was system-injected (not human input)
 
 ---
 
@@ -640,7 +651,7 @@ Beyond `assistant` and `user`, Claude Code logs contain five additional event ty
 
 ### Type: `file-history-snapshot`
 
-**Frequency**: 615 occurrences
+**Frequency**: 615 occurrences (structure simplified in v2.0.65)
 **Purpose**: Tracks file state changes during conversation
 
 ```json
@@ -655,6 +666,8 @@ Beyond `assistant` and `user`, Claude Code logs contain five additional event ty
   "isSnapshotUpdate": false
 }
 ```
+
+> v2.0.65 trims these entries to `messageId` + `snapshot` + `isSnapshotUpdate` (no `uuid`, `sessionId`, `cwd`, or `gitBranch`).
 
 ### Type: `queue-operation`
 
@@ -672,37 +685,45 @@ Beyond `assistant` and `user`, Claude Code logs contain five additional event ty
 
 ### Type: `system`
 
-**Frequency**: 74 occurrences
-**Purpose**: System notifications and conversation management
+**Frequency**: 74 occurrences (v2.0.49 corpus; expanded in v2.0.65)
+**Purpose**: System notifications, compaction markers, and hook summaries
 
 ```json
 {
   "type": "system",
-  "subtype": "compact_boundary",
-  "content": "Conversation compacted",
-  "isMeta": false,
+  "subtype": "stop_hook_summary",
+  "content": "stop hook summary",
   "level": "info",
-  "compactMetadata": {
-    "trigger": "auto",
-    "preTokens": 156910
-  }
+  "hookCount": 2,
+  "hookInfos": [{ "name": "PreToolUse:Bash", "status": "ok" }],
+  "hasOutput": false,
+  "preventedContinuation": false,
+  "stopReason": null,
+  "toolUseID": "toolu_01BKdVgszQBNUd9fukSjjEtB"
 }
 ```
 
-**Subtypes observed**: `compact_boundary` (conversation compression)
+**Subtypes observed**:
+- `compact_boundary` — Conversation compaction marker; carries `compactMetadata` `{trigger: "auto"|"manual", preTokens}` and resets threading with `logicalParentUuid`.
+- `stop_hook_summary` — Summary of hook execution; carries `hookCount`, `hookInfos`, `hookErrors`, `hasOutput`, `preventedContinuation`, `stopReason`, `toolUseID`.
 
 ### Type: `summary`
 
 **Frequency**: 20 occurrences
-**Purpose**: Conversation summaries for context management
+**Purpose**: Conversation summaries for context management (auto-summarizer + compaction)
 
 ```json
 {
   "type": "summary",
   "summary": "Claude Code Integration: Custom Hooks for Deterministic Event Visibility",
-  "leafUuid": "57d54247-2e2b-4658-beaf-4e8f704569a7"
+  "leafUuid": "57d54247-2e2b-4658-beaf-4e8f704569a7",
+  "isCompactSummary": false
 }
 ```
+
+Written by:
+- A startup maintenance task that backfills missing summaries (`leafUuid` points to the latest message in the chain).
+- The compaction pipeline when thresholds are exceeded (`isCompactSummary: true` paired with a `system` `compact_boundary`).
 
 ### Type: `turn_end`
 
@@ -850,6 +871,10 @@ if (assistantResponse) {
       "type": "string",
       "description": "Short agent identifier"
     },
+    "slug": {
+      "type": "string",
+      "description": "Plan slug identifier reused across agents"
+    },
     "sessionId": {
       "type": "string",
       "format": "uuid",
@@ -871,9 +896,35 @@ if (assistantResponse) {
       "type": "boolean",
       "description": "Whether this is a subagent"
     },
+    "isTeammate": {
+      "type": "boolean",
+      "description": "Marks teammate mode"
+    },
+    "logicalParentUuid": {
+      "oneOf": [
+        {"type": "string", "format": "uuid"},
+        {"type": "null"}
+      ],
+      "description": "Logical parent preserved across compaction boundaries"
+    },
     "userType": {
       "type": "string",
       "description": "User interaction type (only 'external' observed in 13K events; other values may exist)"
+    },
+    "isVisibleInTranscriptOnly": {
+      "type": "boolean",
+      "description": "When true, event is hidden from standard transcript views"
+    },
+    "thinkingMetadata": {
+      "$ref": "#/definitions/ThinkingMetadata"
+    },
+    "isMeta": {
+      "type": "boolean",
+      "description": "Marks system-injected/meta user events"
+    },
+    "todos": {
+      "type": "array",
+      "description": "Todo state tracking (structure varies)"
     },
     "requestId": {
       "type": "string",
@@ -929,6 +980,7 @@ if (assistantResponse) {
         },
         "stop_sequence": {"type": ["string", "null"]},
         "usage": {"$ref": "#/definitions/Usage"},
+        "thinkingMetadata": {"$ref": "#/definitions/ThinkingMetadata"},
         "context_management": {
           "type": "object",
           "properties": {
@@ -992,6 +1044,13 @@ if (assistantResponse) {
         "type": {"const": "thinking"},
         "thinking": {"type": "string", "description": "Extended thinking content"},
         "signature": {"type": "string", "description": "Verification signature"}
+      }
+    },
+    "ThinkingMetadata": {
+      "type": "object",
+      "properties": {
+        "level": {"type": "string", "description": "Thinking budget level (e.g., high/ultrathink)"},
+        "disabled": {"type": "boolean", "description": "When true, thinking disabled for this message"}
       }
     },
     "ImageContent": {
@@ -1148,6 +1207,7 @@ To reconstruct a conversation from logs:
    - Assistant text → visible to user
    - Tool invocations → show as "actions taken"
    - Tool results → show as "outcomes"
+6. **Handle compaction**: `system` `compact_boundary` events may reset `parentUuid`; use `logicalParentUuid` to stitch threads across compaction summaries.
 
 ### Relationships
 

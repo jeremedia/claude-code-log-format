@@ -1,14 +1,15 @@
 # Claude Code Tool Execution Flow
 
-**Status**: Validated against source (`cli-beautified.js` v2.0.55) with noted speculative points  
-**Last Updated**: 2025-02-14
+**Status**: Validated against Claude Code v2.0.65 (Bun-compiled binary) with noted speculative points  
+**Last Updated**: 2025-12-12
 
 > How tool calls are queued, validated, executed, and surfaced back to Claude Code.
 
 ## Source Pointers
-- Orchestrator `class H50`: `cli-beautified.js:344997+`
-- Dispatcher `k61` (core generator): `cli-beautified.js:346174+`
-- Post-hook/Pre-hook runners `Cm5` / `Em5`: `cli-beautified.js:346551+` / `346631+`
+- Orchestrator `class H50`
+- Dispatcher `k61` (core generator)
+- Post-hook/Pre-hook runners `Cm5` / `Em5`
+- Hook-system message factories (`iF`, `y9_`, `K_R`)
 
 ## Core Orchestrator
 - Class `H50`:
@@ -63,6 +64,7 @@
   - Emit `hook_cancelled`, `hook_error_during_execution`, or `hook_stopped_continuation` messages.
 - **PostToolUse hooks** (`S50` via `Cm5`):
   - Run after the call; can emit additional messages, additional context, updated MCP outputs, or stop continuation.
+  - Summaries of stop hooks surface as `system` messages with subtype `stop_hook_summary` (`y9_`), carrying `hookCount`, `hookInfos`, `hookErrors`, `preventedContinuation`, and `stopReason`.
   - Cancellation/errors are surfaced as hook_* messages and telemetry (`tengu_post_tool_hook_error`).
 - **Progress streaming**: `Dm5/Hm5` add streaming progress (progress messages) while executing.
 
@@ -70,7 +72,7 @@
 - Tool outputs surface as message payloads:
   - `tool_result` (standard)
   - `structured_output` (if tool returns `structured_output`)
-  - Hook-related system messages (`hook_permission_decision`, `hook_cancelled`, `hook_stopped_continuation`, `hook_error_during_execution`, `hook_additional_context`).
+  - Hook-related system messages (`hook_permission_decision`, `hook_cancelled`, `hook_stopped_continuation`, `hook_error_during_execution`, `hook_additional_context`, `stop_hook_summary`).
 - Context modifiers returned alongside results can mutate the conversation context/state (e.g., add MCP tool output); applied after non-concurrency-safe runs, or individually when yielded.
 
 ## Error Paths (Observed)
